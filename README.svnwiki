@@ -64,7 +64,9 @@ Like let*, chain guarantees evaluation order. In fact, {{(chain a (b _) (c _))}}
 For pipelines containing complex syntax, the nest and nest-reverse operators look like chain but are guaranteed to expand to nested forms, not let* forms. nest nests in the opposite direction of chain, so {{(nest (a _) (b _) c)}} expands to {{(a (b c))}}.
 === Specification
 ==== chain
-(chain <initial-value> [<placeholder> [<ellipsis>]] <step> ...)
+
+<procedure>(chain <initial-value> [<placeholder> [<ellipsis>]] <step> ...)</procedure>
+
 ==== Syntax
 <initial-value> is an expression.
 
@@ -101,7 +103,9 @@ chain and all other SRFI 197 macros support custom placeholder symbols, which ca
 ; => (let*-values (((x1 . x2) (a)) ((x) (apply b x1 c x2))) (d x))
 </enscript>
 ==== chain-and
-(chain-and <initial-value> [<placeholder>] <step> ...)
+
+<procedure>(chain-and <initial-value> [<placeholder>] <step> ...)</procedure>
+
 ===== Syntax
 <initial-value> is an expression.
 
@@ -117,7 +121,9 @@ The <_> placeholder in each <step> is replaced with that step's pipeline value. 
 
 Because chain-and checks the return value of each step, it does not support steps with multiple return values. It is an error if a step returns more than one value.
 ==== chain-when
-(chain-when <initial-value> [<placeholder>] ([<guard>] <step>) ...)
+
+<procedure>(chain-when <initial-value> [<placeholder>] ([<guard>] <step>) ...)</procedure>
+
 ===== Syntax
 <initial-value> and <guard> are expressions. <placeholder> is a literal symbol; this is the placeholder symbol. If <placeholder> is not present, the placeholder symbol is _. The syntax of <step> is (<datum> ... [<_> <datum> ...]), where <_> is the placeholder symbol.
 ===== Semantics
@@ -143,7 +149,9 @@ If a step's <guard> is present and evaluates to #f, that step will be skipped, a
 
 Because chain-when may skip steps, it does not support steps with multiple return values. It is an error if a step returns more than one value.
 ==== chain-lambda
-(chain-lambda [<placeholder> [<ellipsis>]] <step> ...)
+
+<procedure>(chain-lambda [<placeholder> [<ellipsis>]] <step> ...)</procedure>
+
 ===== Syntax
 <placeholder> and <ellipsis> are literal symbols these are the placeholder symbol and ellipsis symbol. If <placeholder> or <ellipsis> are not present, they default to _ and ..., respectively.
 
@@ -164,7 +172,9 @@ If a <step> ends with a placeholder symbol followed by an ellipsis symbol, that 
 
 The number of placeholders in the first <step> determines the arity of the procedure. If the first step ends with an ellipsis symbol, the procedure is variadic.
 ==== nest
-(nest [<placeholder>] <step> ... <initial-value>)
+
+<procedure>(nest [<placeholder>] <step> ... <initial-value>)</procedure>
+
 ===== Syntax
 <placeholder> is a literal symbol; this is the placeholder symbol. If <placeholder> is not present, the placeholder symbol is _. The syntax of <step> is (<datum> ... <_> <datum> ...), where <_> is the placeholder symbol. <initial-value> is expression.
 ===== Semantics
@@ -193,7 +203,9 @@ A custom placeholder can be used to safely nest nest expressions.
 ; => '(1 2 3 (4 5 6))
 </enscript>
 ==== nest-reverse
-(nest-reverse <initial-value> [<placeholder>] <step> ...)
+
+<procedure>(nest-reverse <initial-value> [<placeholder>] <step> ...)</procedure>
+
 ===== Syntax
 <initial-value> is an expression. <placeholder> is a literal symbol; this is the placeholder symbol. If <placeholder> is not present, the placeholder symbol is _.
 
