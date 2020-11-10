@@ -5,6 +5,7 @@
  (synopsis "SRFI-197: Pipeline Operators")
  (version "0.1")
  (category lang-exts)
+ (dependencies r7rs)
  (test-dependencies test)
  (license "MIT")
  (components (extension srfi-197)))
