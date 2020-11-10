@@ -80,7 +80,7 @@ For pipelines containing complex syntax, the nest and nest-reverse operators loo
 <parameter><ellipsis></parameter>
 
 
-{{<placeholder>}} and <ellipsis> are literal symbols; these are the placeholder symbol and ellipsis symbol. If {{<placeholder>}} or <ellipsis> are not present, they default to _ and ..., respectively.
+{{<placeholder>}} and {{<ellipsis>}} are literal symbols; these are the placeholder symbol and ellipsis symbol. If {{<placeholder>}} or {{<ellipsis>}} are not present, they default to _ and ..., respectively.
 
 <parameter><step></parameter>
 
@@ -180,7 +180,7 @@ Because chain-when may skip steps, it does not support steps with multiple retur
 
 <parameter><ellipsis></parameter>
 
-{{<placeholder>}} and <ellipsis> are literal symbols these are the placeholder symbol and ellipsis symbol. If {{<placeholder>}} or <ellipsis> are not present, they default to _ and ..., respectively.
+{{<placeholder>}} and {{<ellipsis>}} are literal symbols these are the placeholder symbol and ellipsis symbol. If {{<placeholder>}} or {{<ellipsis>}} are not present, they default to _ and ..., respectively.
 
 
 <parameter><step></parameter>
