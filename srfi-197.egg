@@ -1,0 +1,10 @@
+;;; srfi-197.egg -*- Scheme -*- vim: ft=scheme:
+
+((author "Adam Nelson")
+ (maintainer "Sergey Goldgaber")
+ (synopsis "SRFI-197: Pipeline Operators")
+ (version "0.1")
+ (category lang-exts)
+ (test-dependencies test)
+ (license "MIT")
+ (components (extension srfi-197)))
