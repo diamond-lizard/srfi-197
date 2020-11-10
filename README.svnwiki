@@ -146,7 +146,7 @@ Because chain-and checks the return value of each step, it does not support step
 <procedure>(chain-when <initial-value> [<placeholder>] ([<guard>] <step>) ...)</procedure>
 
 ===== Syntax
-{{<initial-value>}} and <guard> are expressions. <placeholder> is a literal symbol; this is the placeholder symbol. If <placeholder> is not present, the placeholder symbol is _. The syntax of <step> is (<datum> ... [<_> <datum> ...]), where <_> is the placeholder symbol.
+{{<initial-value>}} and {{<guard>}} are expressions. <placeholder> is a literal symbol; this is the placeholder symbol. If <placeholder> is not present, the placeholder symbol is _. The syntax of <step> is (<datum> ... [<_> <datum> ...]), where <_> is the placeholder symbol.
 ===== Semantics
 A variant of chain in which each step has a guard expression and will be skipped if the guard expression evaluates to #f.
 ===== Example
@@ -166,7 +166,7 @@ Each <step> is evaluated as an application. The return value of the step is pass
 
 The <_> placeholder in each <step> is replaced with that step's pipeline value. If a <step> does not contain <_>, it will ignore its pipeline value
 
-If a step's <guard> is present and evaluates to #f, that step will be skipped, and its pipeline value will be reused as the pipeline value of the next step. The return value of chain-when is the return value of the last non-skipped step, or {{<initial-value>}} if all steps are skipped.
+If a step's {{<guard>}} is present and evaluates to #f, that step will be skipped, and its pipeline value will be reused as the pipeline value of the next step. The return value of chain-when is the return value of the last non-skipped step, or {{<initial-value>}} if all steps are skipped.
 
 Because chain-when may skip steps, it does not support steps with multiple return values. It is an error if a step returns more than one value.
 ==== chain-lambda
