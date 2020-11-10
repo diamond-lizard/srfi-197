@@ -1,4 +1,4 @@
-(include "./srfi-64-minimal.scm")
+(include "../srfi-64-minimal.scm")
 
 (define (exclamation x) (string-append x "!"))
 
