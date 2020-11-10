@@ -41,10 +41,10 @@ Pipelines are especially useful for nested list and vector operations.
        (fold * 1 _))
 </enscript>
 
-Scheme already provides an idiomatic way to chain expressions in let* and SRFI 2 and-let*, but the primary advantage of chain is terseness and the accompanying
+Scheme already provides an idiomatic way to chain expressions in let* and SRFI 2 {{and-let*}}, but the primary advantage of chain is terseness and the accompanying
 readability. This focus on readability and reduced nesting is similar in spirit to SRFI 156 and SRFI 26.
 
-Compared to an equivalent let* expression, chain removes two levels of parenthesis nesting, does not define any intermediate variables, and allows mixing single and
+Compared to an equivalent {{let*}} expression, chain removes two levels of parenthesis nesting, does not define any intermediate variables, and allows mixing single and
 multiple return values.
 
 To demonstrate the difference in verbosity, here is the let* equivalent of the recipe expression:
@@ -59,10 +59,9 @@ To demonstrate the difference in verbosity, here is the let* equivalent of the r
   (bake x (fahrenheit 350)))
 </enscript>
 
-Like let*, chain guarantees evaluation order. In fact, (chain a (b _) (c _)) expands to something like (let* ((x (b a)) (x (c x))) x), not (c (b a)), and so chain is not suitable for pipelines containing syntax like if or let.
+Like let*, chain guarantees evaluation order. In fact, {{(chain a (b _) (c _))}} expands to something like {{(let* ((x (b a)) (x (c x))) x)}}, not {{(c (b a))}}, and so chain is not suitable for pipelines containing syntax like if or let.
 
-For pipelines containing complex syntax, the nest and nest-reverse operators look like chain but are guaranteed to expand to nested forms, not let* forms. nest nests in
-the opposite direction of chain, so (nest (a _) (b _) c) expands to (a (b c)).
+For pipelines containing complex syntax, the nest and nest-reverse operators look like chain but are guaranteed to expand to nested forms, not let* forms. nest nests in the opposite direction of chain, so {{(nest (a _) (b _) c)}} expands to {{(a (b c))}}.
 === Specification
 ==== chain
 (chain <initial-value> [<placeholder> [<ellipsis>]] <step> ...)
