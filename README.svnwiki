@@ -208,7 +208,7 @@ The number of placeholders in the first {{<step>}} determines the arity of the p
 
 <parameter><placeholder></parameter>
 
-{{<placeholder>}} is a literal symbol; this is the placeholder symbol. If {{<placeholder>}} is not present, the placeholder symbol is _. The syntax of {{<step>}} is (<datum> ... <_> <datum> ...), where {{<_>}} is the placeholder symbol. {{<initial-value>}} is expression.
+{{<placeholder>}} is a literal symbol; this is the placeholder symbol. If {{<placeholder>}} is not present, the placeholder symbol is _. The syntax of {{<step>}} is {{(<datum> ... <_> <datum> ...)}}, where {{<_>}} is the placeholder symbol. {{<initial-value>}} is expression.
 ===== Semantics
 nest is similar to chain, but sequences its steps in the opposite order. Unlike chain, nest literally nests expressions; as a result, it does not provide the same strict evaluation order guarantees as chain.
 
