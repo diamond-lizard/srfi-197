@@ -1,0 +1,229 @@
+* 197: Pipeline Operators
+** Abstract
+Many functional languages provide pipeline operators, like Clojure's -> or OCaml's |>. Pipelines are a simple, terse, and readable way to write deeply-nested expressions. This SRFI defines a family of chain and nest pipeline operators, which can rewrite nested expressions like (a b (c d (e f g))) as a sequence of operations: (chain g (e f _) (c d _) (a b _)).
+** Rationale
+Deeply-nested expressions are a common problem in all functional languages, especially Lisps. Excessive nesting can result in deep indentation and parenthesis-matching
+errors.
+
+#+BEGIN_SRC scheme
+; Quick, how many close parentheses are there?
+(eta (zeta (epsilon (delta (gamma (beta (alpha)))))))
+#+END_SRC
+
+Additionally, some expressions sound more natural when written inside out, as a sequence of steps from start to finish.
+
+#+BEGIN_SRC scheme
+; This recipe looks… backwards.
+(bake (pour (mix (add eggs (add sugar (add flour bowl))))) (fahrenheit 350))
+#+END_SRC
+
+Many functional languages solve this by introducing pipeline operators. This SRFI defines a chain operator inspired by Clojure's threading macros, but with _ as an
+argument placeholder, a notation also used in SRFI 156.
+
+#+BEGIN_SRC scheme
+(chain (alpha) (beta _) (gamma _) (delta _) (epsilon _) (zeta _) (eta _))
+
+(chain bowl
+       (add flour _)
+       (add sugar _)
+       (add eggs _)
+       (mix _)
+       (pour _)
+       (bake _ (fahrenheit 350)))
+#+END_SRC
+
+Pipelines are especially useful for nested list and vector operations.
+
+#+BEGIN_SRC scheme
+(chain xs
+       (map (lambda (x) (+ x 1) _)
+       (filter odd? _)
+       (fold * 1 _))
+#+END_SRC
+
+Scheme already provides an idiomatic way to chain expressions in let* and SRFI 2 and-let*, but the primary advantage of chain is terseness and the accompanying
+readability. This focus on readability and reduced nesting is similar in spirit to SRFI 156 and SRFI 26.
+
+Compared to an equivalent let* expression, chain removes two levels of parenthesis nesting, does not define any intermediate variables, and allows mixing single and
+multiple return values.
+
+To demonstrate the difference in verbosity, here is the let* equivalent of the recipe expression:
+
+#+BEGIN_SRC scheme
+(let* ((x bowl)
+       (x (add flour x))
+       (x (add sugar x))
+       (x (add eggs x))
+       (x (mix x))
+       (x (pour x)))
+  (bake x (fahrenheit 350)))
+#+END_SRC
+
+Like let*, chain guarantees evaluation order. In fact, (chain a (b _) (c _)) expands to something like (let* ((x (b a)) (x (c x))) x), not (c (b a)), and so chain is not suitable for pipelines containing syntax like if or let.
+
+For pipelines containing complex syntax, the nest and nest-reverse operators look like chain but are guaranteed to expand to nested forms, not let* forms. nest nests in
+the opposite direction of chain, so (nest (a _) (b _) c) expands to (a (b c)).
+** Specification
+*** chain
+(chain <initial-value> [<placeholder> [<ellipsis>]] <step> ...)
+*** Syntax
+<initial-value> is an expression.
+
+<placeholder> and <ellipsis> are literal symbols; these are the placeholder symbol and ellipsis symbol. If <placeholder> or <ellipsis> are not present, they default to _ and ..., respectively.
+
+The syntax of <step> is (<datum> ...), where each <datum> is either the placeholder symbol, the ellipsis symbol, or an expression. A <step> must contain at least one
+<datum>. The ellipsis symbol is only allowed at the end of a <step>, and it must immediately follow a placeholder symbol.
+*** Semantics
+chain evaluates each <step> in order from left to right, passing the result of each step to the next.
+
+Each <step> is evaluated as an application, and the return value(s) of that application are passed to the next step as its pipeline values. <initial-value> is the pipeline value of the first step. The return value(s) of chain are the return value(s) of the last step.
+
+The placeholder symbols in each <step> are replaced with that step's pipeline values, in the order they appear. It is an error if the number of placeholders for a step does not equal the number of pipeline values for that step, unless the step contains no placeholders, in which case it will ignore its pipeline values.
+
+#+BEGIN_SRC scheme
+(chain x (a b _)) ; => (a b x)
+(chain (a b) (c _ d) (e f _)) ; => (let* ((x (a b)) (x (c x d))) (e f x))
+(chain (a) (b _ _) (c _)) ; => (let*-values (((x1 x2) (a)) ((x) (b x1 x2))) (c x))
+#+END_SRC
+
+If a <step> ends with a placeholder symbol followed by an ellipsis symbol, that placeholder sequence is replaced with all remaining pipeline values that do not have a matching placeholder.
+
+#+BEGIN_SRC scheme
+(chain (a) (b _ c _ ...) (d _))
+; => (let*-values (((x1 . x2) (a)) ((x) (apply b x1 c x2))) (d x))
+#+END_SRC
+
+chain and all other SRFI 197 macros support custom placeholder symbols, which can help to preserve hygiene when used in the body of a syntax definition that may insert a _ or ....
+
+#+BEGIN_SRC scheme
+(chain (a b) <> (c <> d) (e f <>))
+ ; => (let* ((x (a b)) (x (c x d))) (e f x))
+(chain (a) - --- (b - c - ---) (d -))
+; => (let*-values (((x1 . x2) (a)) ((x) (apply b x1 c x2))) (d x))
+#+END_SRC
+*** chain-and
+(chain-and <initial-value> [<placeholder>] <step> ...)
+**** Syntax
+<initial-value> is an expression.
+
+<placeholder> is a literal symbol; this is the placeholder symbol. If <placeholder> is not present, the placeholder symbol is _.
+
+The syntax of <step> is (<datum> ... [<_> <datum> ...]), where <_> is the placeholder symbol.
+**** Semantics
+A variant of chain that short-circuits and returns #f if any step returns #f. chain-and is to chain as SRFI 2 and-let* is to let*.
+
+Each <step> is evaluated as an application. If the step evaluates to #f, the remaining steps are not evaluated, and chain-and returns #f. Otherwise, the return value of the step is passed to the next step as its pipeline value. <initial-value> is the pipeline value of the first step. If no step evaluates to #f, the return value of chain-and is the return value of the last step.
+
+The <_> placeholder in each <step> is replaced with that step's pipeline value. If a <step> does not contain <_>, it will ignore its pipeline value, but chain-and will still check whether that pipeline value is #f.
+
+Because chain-and checks the return value of each step, it does not support steps with multiple return values. It is an error if a step returns more than one value.
+*** chain-when
+(chain-when <initial-value> [<placeholder>] ([<guard>] <step>) ...)
+**** Syntax
+<initial-value> and <guard> are expressions. <placeholder> is a literal symbol; this is the placeholder symbol. If <placeholder> is not present, the placeholder symbol is _. The syntax of <step> is (<datum> ... [<_> <datum> ...]), where <_> is the placeholder symbol.
+**** Semantics
+A variant of chain in which each step has a guard expression and will be skipped if the guard expression evaluates to #f.
+**** Example
+#+BEGIN_SRC scheme
+(define (describe-number n)
+  (chain-when '()
+    ((odd? n) (cons "odd" _))
+    ((even? n) (cons "even" _))
+    ((zero? n) (cons "zero" _))
+    ((positive? n) (cons "positive" _))))
+
+(describe-number 3) ; => '("positive" "odd")
+(describe-number 4) ; => '("positive" "even")
+#+END_SRC
+**** Description
+Each <step> is evaluated as an application. The return value of the step is passed to the next step as its pipeline value. <initial-value> is the pipeline value of the first step.
+
+The <_> placeholder in each <step> is replaced with that step's pipeline value. If a <step> does not contain <_>, it will ignore its pipeline value
+
+If a step's <guard> is present and evaluates to #f, that step will be skipped, and its pipeline value will be reused as the pipeline value of the next step. The return value of chain-when is the return value of the last non-skipped step, or <initial-value> if all steps are skipped.
+
+Because chain-when may skip steps, it does not support steps with multiple return values. It is an error if a step returns more than one value.
+*** chain-lambda
+(chain-lambda [<placeholder> [<ellipsis>]] <step> ...)
+**** Syntax
+<placeholder> and <ellipsis> are literal symbols these are the placeholder symbol and ellipsis symbol. If <placeholder> or <ellipsis> are not present, they default to _ and ..., respectively.
+
+The syntax of <step> is (<datum> ...), where each <datum> is either the placeholder symbol, the ellipsis symbol, or an expression. A <step> must contain at least one <datum>. The ellipsis symbol is only allowed at the end of a <step>, and it must immediately follow a placeholder symbol.
+**** Semantics
+Creates a procedure from a sequence of chain steps. When called, a chain-lambda procedure evaluates each <step> in order from left to right, passing the result of each step to the next.
+
+#+BEGIN_SRC scheme
+(chain-lambda (a _) (b _)) ; => (lambda (x) (let* ((x (a x))) (b x)))
+(chain-lambda (a _ _) (b c _)) ; => (lambda (x1 x2) (let* ((x (a x1 x2))) (b c x)))
+#+END_SRC
+
+Each <step> is evaluated as an application, and the return value(s) of that application are passed to the next step as its pipeline values. The procedure's arguments are the pipeline values of the first step. The return value(s) of the procedure are the return value(s) of the last step.
+
+The placeholder symbols in each <step> are replaced with that step's pipeline values, in the order they appear. It is an error if the number of placeholders for a step does not equal the number of pipeline values for that step, unless the step contains no placeholders, in which case it will ignore its pipeline values.
+
+If a <step> ends with a placeholder symbol followed by an ellipsis symbol, that placeholder sequence is replaced with all remaining pipeline values that do not have a matching placeholder.
+
+The number of placeholders in the first <step> determines the arity of the procedure. If the first step ends with an ellipsis symbol, the procedure is variadic.
+*** nest
+(nest [<placeholder>] <step> ... <initial-value>)
+**** Syntax
+<placeholder> is a literal symbol; this is the placeholder symbol. If <placeholder> is not present, the placeholder symbol is _. The syntax of <step> is (<datum> ... <_> <datum> ...), where <_> is the placeholder symbol. <initial-value> is expression.
+**** Semantics
+nest is similar to chain, but sequences its steps in the opposite order. Unlike chain, nest literally nests expressions; as a result, it does not provide the same strict evaluation order guarantees as chain.
+
+#+BEGIN_SRC scheme
+(nest (a b _) (c d _) e) ; => (a b (c d e))
+#+END_SRC
+
+A nest expression is evaluated by lexically replacing the <_> in the last <step> with <initial-value>, then replacing the <_> in the next-to-last <step> with that replacement, and so on until the <_> in the first <step> has been replaced. It is an error if the resulting final replacement is not an expression, which is then evaluated and its values are returned.
+
+Because it produces an actual nested form, nest can build expressions that chain cannot. For example, nest can build a quoted data structure:
+
+#+BEGIN_SRC scheme
+(nest '_ (1 2 _) (3 _ 5) (_) 4) ; => '(1 2 (3 (4) 5))
+#+END_SRC
+
+nest can also safely include special forms like if, let, lambda, or parameterize in a pipeline.
+
+A custom placeholder can be used to safely nest nest expressions.
+
+#+BEGIN_SRC scheme
+(nest (nest _2 '_2 (1 2 3 _2) _ 6)
+      (_ 5 _2)
+      4)
+; => '(1 2 3 (4 5 6))
+#+END_SRC
+*** nest-reverse
+(nest-reverse <initial-value> [<placeholder>] <step> ...)
+**** Syntax
+<initial-value> is an expression. <placeholder> is a literal symbol; this is the placeholder symbol. If <placeholder> is not present, the placeholder symbol is _.
+
+The syntax of <step> is (<datum> ... <_> <datum> ...), where <_> is the placeholder symbol.
+**** Semantics
+nest-reverse is variant of nest that nests in reverse order, which is the same order as chain.
+
+#+BEGIN_SRC scheme
+(nest-reverse e (c d _) (a b _)) ; => (a b (c d e))
+#+END_SRC
+
+A nest-reverse expression is evaluated by lexically replacing the <_> in the first <step> with <initial-value>, then replacing the <_> in the second <step> with that replacement, and so on until the <_> in the last <step> has been replaced. It is an error if the resulting final replacement is not an expression, which is then evaluated and its values are returned.
+** Implementation
+A sample implementation is available on GitHub. This repository contains two portable SRFI 197 implementations, one in R7RS-small and syntax-rules, the other in R6RS and syntax-case. The only dependency of either implementation is SRFI 2. It includes an R7RS library wrapper and a test script.
+** Acknowledgements
+Thanks to the participants in the SRFI 197 mailing list who helped me refine this SRFI, including Marc Nieper-Wißkirchen, Linus Björnstam, Shiro Kawai, Lassi Kortela, and John Cowan.
+
+Marc provided a paragraph that has been included (with only minor changes) in the Semantics section of the nest and nest-reverse macros.
+
+Thanks to Rich Hickey for Clojure and the original implementation of Clojure threading macros, and to Paulus Esterhazy for the (EPL licensed) threading macros
+documentation page, which was a source of inspiration and some of the examples in this document.
+** Author
+*** by Adam Nelson
+*** Ported to Chicken Scheme 5 by Sergey Goldgaber
+** Copyright
+© 2020 Adam Nelson.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice (including the next paragraph) shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
