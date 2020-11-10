@@ -186,7 +186,7 @@ Because chain-when may skip steps, it does not support steps with multiple retur
 
 The syntax of {{<step>}} is (<datum> ...), where each {{<datum>}} is either the placeholder symbol, the ellipsis symbol, or an expression. A {{<step>}} must contain at least one {{<datum>}}. The ellipsis symbol is only allowed at the end of a {{<step>}}, and it must immediately follow a placeholder symbol.
 ===== Semantics
-Creates a procedure from a sequence of chain steps. When called, a chain-lambda procedure evaluates each {{<step>}} in order from left to right, passing the result of each step to the next.
+Creates a procedure from a sequence of chain steps. When called, a {{chain-lambda}} procedure evaluates each {{<step>}} in order from left to right, passing the result of each step to the next.
 
 <enscript highlight="scheme">
 (chain-lambda (a _) (b _)) ; => (lambda (x) (let* ((x (a x))) (b x)))
